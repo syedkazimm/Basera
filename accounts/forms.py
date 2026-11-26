@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth import authenticate, password_validation
 from django.core.exceptions import ValidationError
@@ -108,3 +110,59 @@ class LoginForm(forms.Form):
             if self.user is None:
                 raise ValidationError(self.error_messages["invalid_login"], code="invalid_login")
         return cleaned
+
+
+# +92 or 0, then 3, then nine digits (a Pakistani mobile number).
+PHONE_PATTERN = re.compile(r"^(\+92|0)3[0-9]{9}$")
+PHONE_MESSAGE = "Enter a Pakistani number, for example 0300 1234567 or +92 300 1234567."
+
+
+class ProfileForm(forms.ModelForm):
+    """US-05: the details a user may change on My Profile.
+
+    Email and role are deliberately not fields, so a forged request can't change
+    them. Everything except the name may be left empty.
+    """
+
+    full_name = forms.CharField(max_length=150, error_messages={"required": "Please enter your full name."})
+    # Longer than the column so that "0300 123 4567" can be typed; spaces are removed below.
+    phone = forms.CharField(max_length=30, required=False, error_messages={"max_length": PHONE_MESSAGE})
+    # 255 matches Order.delivery_address, which this prefills.
+    default_address = forms.CharField(
+        max_length=255,
+        required=False,
+        error_messages={"max_length": "Please keep the address to 255 characters or fewer."},
+    )
+    default_city = forms.CharField(
+        max_length=60,
+        required=False,
+        error_messages={"max_length": "Please keep the city to 60 characters or fewer."},
+    )
+
+    class Meta:
+        model = User
+        fields = ["full_name", "phone", "default_address", "default_city"]
+
+    def clean_full_name(self):
+        name = " ".join(self.cleaned_data["full_name"].split())
+        if not name:
+            raise ValidationError("Please enter your full name.")
+        return name
+
+    def clean_phone(self):
+        """Store the number without spaces or dashes, e.g. 03001234567."""
+        phone = re.sub(r"[\s-]", "", self.cleaned_data["phone"])
+        if phone and not PHONE_PATTERN.match(phone):
+            raise ValidationError(PHONE_MESSAGE)
+        return phone
+
+    def clean_default_address(self):
+        return " ".join(self.cleaned_data["default_address"].split())
+
+    def clean_default_city(self):
+        return " ".join(self.cleaned_data["default_city"].split())
+
+    def save(self):
+        # Only these columns are written, whatever else is on the instance.
+        self.instance.save(update_fields=self._meta.fields)
+        return self.instance

@@ -319,6 +319,28 @@ NEW_SECT += [
     ]),
 ]
 
+PR = "accounts.test_profile.ProfileTests."
+NEW_SECT += [
+    ("A21. My profile - US-05 (accounts/test_profile.py)", [
+        ("PR-01", "Open My Profile while logged out", "Redirected to login, then back to the profile", PR + "test_requires_login"),
+        ("PR-02", "Open My Profile", "Shows name, email, phone, address, city and account type", PR + "test_shows_current_details"),
+        ("PR-03", "Email and role", "Shown read-only; no field submits them", PR + "test_email_and_role_are_read_only"),
+        ("PR-04", "Save valid changes", "Saved, tidied and shown at once with a success message", PR + "test_valid_changes_save_and_show_immediately"),
+        ("PR-05", "Clear the optional details", "Phone, address and city saved empty", PR + "test_optional_details_can_be_cleared"),
+        ("PR-06", "Forged request changing email, role or flags", "Ignored", PR + "test_forged_email_and_role_are_ignored"),
+        ("PR-07", "Session and password after saving", "Still logged in; password unchanged", PR + "test_saving_keeps_the_user_logged_in_with_the_same_password"),
+        ("PR-08", "Blank full name", "Error shown, typed values kept, nothing saved", PR + "test_blank_name_is_rejected_and_nothing_is_saved"),
+        ("PR-09", "Phone that is not a Pakistani mobile number", "Rejected with an example of the format", PR + "test_phone_must_be_a_pakistani_number"),
+        ("PR-10", "Both phone formats, with spaces", "Accepted and stored without spaces", PR + "test_both_phone_formats_are_accepted"),
+        ("PR-11", "Over-long address or city", "Rejected with the limit", PR + "test_too_long_address_and_city_are_rejected"),
+        ("PR-12", "Forged id of another account", "Only your own account changes", PR + "test_editing_never_touches_another_account"),
+        ("PR-13", "Customer links and header account icon", "Change password, grow profiles and orders; icon opens the profile", PR + "test_customer_links_and_header_icon"),
+        ("PR-14", "Seller opens My Profile", "No customer-only links; name in the header opens the profile", PR + "test_seller_can_open_profile_without_customer_links"),
+        ("PR-15", "Save without the security (CSRF) token", "Refused (403)", PR + "test_post_without_csrf_token_is_refused"),
+        ("PR-16", "Code that does not know the new columns adds a user", "The database fills them in as empty", PR + "test_database_supplies_defaults_for_code_that_omits_the_new_columns"),
+    ]),
+]
+
 # --------------------------------------------------------------------------------------
 # Manual cases: (ID, test case, expected result, result)
 # Result words: Pass | Carried over (files unchanged since Shehroze's run) | Not re-run | Open
@@ -465,8 +487,8 @@ def build(out):
             f"Deployment readiness: {count('Pass', DEPLOY)} passed, {count('Open', DEPLOY)} open.", sub),
         Paragraph(f"Run on the dev branch (commit {commit}, branch {branch}) on {date.today():%d %B %Y}. "
                   "Sections A1 to A6 and tests M-01 to M-19 are Shehroze's original cases, re-run on dev. "
-                  "Sections A7 to A20, M-20 to M-47 and section C were added after the catalogue, cart, grow profile, "
-                  "matching and landing page work was merged, and production setup was added.", note),
+                  "Sections A7 to A21, M-20 to M-47 and section C were added after the catalogue, cart, grow profile, "
+                  "matching and landing page work was merged, and production setup was added. A21 covers My Profile (US-05).", note),
         Paragraph("Result words: Pass = performed and passed. Carried over = the files are unchanged since Shehroze's "
                   "passing run (checked with git diff). Not re-run = could not be repeated in this run (reason given). "
                   "Open = a known gap to close before release.", note),

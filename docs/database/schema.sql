@@ -4,6 +4,7 @@
 -- Generated from the Django migrations of the project apps
 --   accounts/migrations/0001_initial.py
 --   accounts/migrations/0002_user_full_name_superuser_constraints.py
+--   accounts/migrations/0003_user_default_address_default_city.py
 --   catalog/migrations/0001_initial.py
 --   growprofiles/migrations/0001_initial.py
 --   orders/migrations/0001_initial.py
@@ -56,6 +57,18 @@ ALTER TABLE "accounts_user" ADD CONSTRAINT "accounts_user_full_name_not_empty" C
 -- Create constraint accounts_user_superuser_is_admin on model user
 --
 ALTER TABLE "accounts_user" ADD CONSTRAINT "accounts_user_superuser_is_admin" CHECK ((NOT "is_superuser" OR "role" = 'ADMIN'));
+
+--
+-- Migration accounts.0003_user_default_address_default_city
+--
+--
+-- Add field default_address to user
+--
+ALTER TABLE "accounts_user" ADD COLUMN "default_address" text DEFAULT '' NOT NULL;
+--
+-- Add field default_city to user
+--
+ALTER TABLE "accounts_user" ADD COLUMN "default_city" varchar(60) DEFAULT '' NOT NULL;
 
 --
 -- Migration catalog.0001_initial

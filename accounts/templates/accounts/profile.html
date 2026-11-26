@@ -1,0 +1,84 @@
+{% extends "accounts/site_base.html" %}
+
+{% block title %}My profile{% endblock %}
+
+{% comment %}
+  US-05 (Figma "My Profile"). Posts to itself; the form uses novalidate so the
+  server shows the styled errors. Email and role are shown but never submitted.
+  Needs: form (accounts.forms.ProfileForm), profile_count (customers only).
+{% endcomment %}
+
+{% block content %}
+<div class="bt-container bt-formpage bt-profilepage">
+  <form class="bt-form" method="post" novalidate>
+    {% csrf_token %}
+    <h2>Your details</h2>
+    <p class="bt-muted">These are used to fill in delivery details when you order.</p>
+
+    {% if form.errors %}<p class="bt-notice bt-notice--error" role="alert">Please fix the highlighted fields and try again.</p>{% endif %}
+
+    <div class="bt-field{% if form.full_name.errors %} is-invalid{% endif %}">
+      <label for="id_full_name">Full name</label>
+      <input class="bt-input" type="text" name="full_name" id="id_full_name" maxlength="150" autocomplete="name"
+             placeholder="e.g. Ayesha Khan" value="{{ form.full_name.value|default:'' }}"
+             {% if form.full_name.errors %}aria-invalid="true" aria-describedby="err-full_name"{% endif %}>
+      {% for e in form.full_name.errors %}<p class="bt-error" id="err-full_name">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div class="bt-field bt-field--readonly">
+      <label for="id_email">Email</label>
+      <input class="bt-input" type="email" id="id_email" value="{{ user.email }}" readonly aria-describedby="hint-email">
+      <p class="bt-field__hint" id="hint-email">Your email is how you log in, so it can’t be changed here.</p>
+    </div>
+
+    <div class="bt-field{% if form.phone.errors %} is-invalid{% endif %}">
+      <label for="id_phone">Phone</label>
+      <input class="bt-input" type="tel" name="phone" id="id_phone" maxlength="30" autocomplete="tel"
+             placeholder="e.g. 0300 1234567" value="{{ form.phone.value|default:'' }}"
+             {% if form.phone.errors %}aria-invalid="true" aria-describedby="err-phone"{% else %}aria-describedby="hint-phone"{% endif %}>
+      {% for e in form.phone.errors %}<p class="bt-error" id="err-phone">{{ e }}</p>{% empty %}<p class="bt-field__hint" id="hint-phone">Use the Pakistani format, for example 0300 1234567 or +92 300 1234567.</p>{% endfor %}
+    </div>
+
+    <div class="bt-field{% if form.default_address.errors %} is-invalid{% endif %}">
+      <label for="id_default_address">Default delivery address</label>
+      <input class="bt-input" type="text" name="default_address" id="id_default_address" maxlength="255" autocomplete="street-address"
+             placeholder="House, street and area" value="{{ form.default_address.value|default:'' }}"
+             {% if form.default_address.errors %}aria-invalid="true" aria-describedby="err-default_address"{% endif %}>
+      {% for e in form.default_address.errors %}<p class="bt-error" id="err-default_address">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div class="bt-field{% if form.default_city.errors %} is-invalid{% endif %}">
+      <label for="id_default_city">City</label>
+      <input class="bt-input" type="text" name="default_city" id="id_default_city" maxlength="60" autocomplete="address-level2"
+             placeholder="e.g. Lahore" value="{{ form.default_city.value|default:'' }}"
+             {% if form.default_city.errors %}aria-invalid="true" aria-describedby="err-default_city"{% endif %}>
+      {% for e in form.default_city.errors %}<p class="bt-error" id="err-default_city">{{ e }}</p>{% endfor %}
+    </div>
+
+    <div class="bt-actions">
+      <button class="bt-btn" type="submit">Save changes</button>
+      <a class="bt-btn bt-btn--outline" href="{% url 'profile' %}">Cancel</a>
+    </div>
+  </form>
+
+  <aside class="bt-aside">
+    <section class="bt-account">
+      <h3>Your account</h3>
+      <p>A quick look at how you’re signed in.</p>
+      <dl class="bt-account__facts">
+        <div><dt>Account type</dt><dd>{{ user.get_role_display }}</dd></div>
+        <div><dt>Member since</dt><dd>{{ user.date_joined|date:"F Y" }}</dd></div>
+        {% if user.is_customer %}<div><dt>Grow profiles</dt><dd>{{ profile_count }} saved</dd></div>{% endif %}
+      </dl>
+      <ul class="bt-account__links">
+        <li><a href="{% url 'change_password' %}">Change password <span aria-hidden="true">→</span></a></li>
+        {% if user.is_customer %}
+          <li><a href="{% url 'grow_profiles' %}">My grow profiles <span aria-hidden="true">→</span></a></li>
+          <li><a href="{% url 'my_orders' %}">My orders <span aria-hidden="true">→</span></a></li>
+        {% endif %}
+      </ul>
+    </section>
+    <p class="bt-privacy">{% include "growprofiles/_icon.html" with name="info" size=20 %}<span>Only you can see this page.{% if user.is_customer %} Sellers only get what they need to deliver your order.{% endif %}</span></p>
+  </aside>
+</div>
+{% endblock %}
