@@ -19,6 +19,24 @@ class Region(models.Model):
         return self.name
 
 
+# Soils and ecological roles a seller can pick (several of each). They are
+# stored as comma-separated text in suitable_soils / ecological_role.
+SOIL_CHOICES = [
+    ("Sandy", "Drains fast"),
+    ("Loam", "Balanced, rich"),
+    ("Clay", "Holds water"),
+    ("Rocky", "Stony, well drained"),
+]
+ECOLOGICAL_ROLE_CHOICES = [
+    "Shade & cooling",
+    "Food",
+    "Pollinators",
+    "Erosion control",
+    "Ornamental",
+    "Medicinal",
+]
+
+
 class PlantSpecies(models.Model):
     """A species offered for sale by a seller (ERD: "PlantSpecies (Listing)")."""
 
@@ -26,6 +44,16 @@ class PlantSpecies(models.Model):
         INDOOR = "INDOOR", "Indoor"
         OUTDOOR = "OUTDOOR", "Outdoor"
         BOTH = "BOTH", "Both"
+
+    class LightNeed(models.TextChoices):
+        FULL_SUN = "Full sun", "Full sun"
+        PARTIAL_SHADE = "Partial shade", "Partial shade"
+        SHADE = "Shade", "Shade"
+
+    class WaterNeed(models.TextChoices):
+        LOW = "Low", "Low"
+        MEDIUM = "Medium", "Medium"
+        HIGH = "High", "High"
 
     # PROTECT: a seller who still has listings cannot be hard-deleted (their
     # listings may be referenced by past orders); deactivate the user instead.
@@ -37,8 +65,8 @@ class PlantSpecies(models.Model):
     common_name = models.CharField(max_length=150)
     scientific_name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    light_need = models.CharField(max_length=50)
-    water_need = models.CharField(max_length=50)
+    light_need = models.CharField(max_length=50, choices=LightNeed.choices)
+    water_need = models.CharField(max_length=50, choices=WaterNeed.choices)
     suitable_soils = models.CharField(max_length=255)
     setting = models.CharField(max_length=10, choices=Setting.choices)
     ecological_role = models.CharField(max_length=255, blank=True)
@@ -68,13 +96,26 @@ class PlantSpecies(models.Model):
                 name="catalog_plantspecies_setting_valid",
             ),
             models.CheckConstraint(
-                condition=models.Q(price__gte=0),
-                name="catalog_plantspecies_price_gte_0",
+                # US-13: a listing's price must be more than Rs 0.
+                condition=models.Q(price__gt=0),
+                name="catalog_plantspecies_price_gt_0",
             ),
         ]
 
     def __str__(self):
         return f"{self.common_name} ({self.scientific_name})"
+
+    @staticmethod
+    def _split(text):
+        return [part.strip() for part in text.split(",") if part.strip()]
+
+    @property
+    def soil_list(self):
+        return self._split(self.suitable_soils)
+
+    @property
+    def ecological_role_list(self):
+        return self._split(self.ecological_role)
 
 
 class SpeciesRegion(models.Model):

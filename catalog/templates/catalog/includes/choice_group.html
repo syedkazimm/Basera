@@ -1,0 +1,27 @@
+{% comment %}
+  A group of choice chips or cards (radio or checkbox).
+  with: field (bound field), options (from views._options), legend,
+        kind ("chip" | "card"), type ("radio" | "checkbox"), icon (chips), columns (cards, default 3)
+{% endcomment %}
+<fieldset class="app-choice-group{% if field.errors %} is-invalid{% endif %}"
+          {% if field.errors %}aria-invalid="true" aria-describedby="{{ field.name }}-error"{% endif %}>
+  <legend class="app-label">{{ legend }}</legend>
+  <div class="app-{{ kind }}s{% if kind == 'card' and columns == 4 %} app-cards--4{% endif %}">
+    {% for option in options %}
+      <label class="app-{{ kind }}" for="{{ option.id }}">
+        <input type="{{ type }}" id="{{ option.id }}" name="{{ field.html_name }}" value="{{ option.value }}"{% if option.checked %} checked{% endif %}>
+        <span class="app-{{ kind }}__face">
+          {% if kind == "chip" %}
+            {% include "catalog/includes/icon.html" with name=icon size=14 %}
+            <span class="app-chip__label">{{ option.label }}</span>
+          {% else %}
+            {% include "catalog/includes/icon.html" with name=option.icon size=18 %}
+            <span class="app-card__label">{{ option.label }}</span>
+            <span class="app-card__hint">{{ option.hint }}</span>
+          {% endif %}
+        </span>
+      </label>
+    {% endfor %}
+  </div>
+  {% if field.errors %}<p class="app-error" id="{{ field.name }}-error">{{ field.errors.0 }}</p>{% endif %}
+</fieldset>

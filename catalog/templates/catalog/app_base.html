@@ -1,0 +1,60 @@
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% comment %}
+  Shell for the signed-in pages (the light "botanical" look from the Basera
+  wireframes): header with nav, page banner, content, footer. It still extends
+  accounts/base.html, so fonts, Bootstrap and basera.js are shared.
+  Blocks: breadcrumb, page_title, page_lede, content, scripts.
+{% endcomment %}
+
+{% block extra_head %}<link href="{% static 'catalog/css/app.css' %}" rel="stylesheet">{% endblock %}
+{% block body_attrs %} class="basera-app"{% endblock %}
+{% block backdrop %}{% endblock %}
+
+{% block page %}
+<div class="app-page">
+  <header class="app-header">
+    <div class="app-shell app-header__inner">
+      <a class="app-brand basera-display" href="{% url 'home' %}">basera</a>
+      {% if user.is_seller %}<span class="app-badge">Seller</span>{% endif %}
+      <nav class="app-nav" aria-label="Main">
+        {% if user.is_seller %}
+          <a href="{% url 'listing_add' %}"{% if request.resolver_match.url_name == 'listing_add' %} aria-current="page"{% endif %}>Add a plant</a>
+        {% endif %}
+      </nav>
+      <div class="app-header__end">
+        <a class="app-header__link" href="{% url 'help' %}">Help</a>
+        <span class="app-account" title="{{ user.email }}">{{ user.full_name|default:user.email }}</span>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="app-header__link app-header__button" type="submit">Log out</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <section class="app-banner">
+    <div class="app-shell">
+      <nav class="app-breadcrumb" aria-label="Breadcrumb">{% block breadcrumb %}{% endblock %}</nav>
+      <h1 class="app-banner__title basera-display">{% block page_title %}{% endblock %}</h1>
+      <p class="app-banner__lede">{% block page_lede %}{% endblock %}</p>
+    </div>
+  </section>
+
+  <main class="app-main app-shell">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="app-footer">
+    <div class="app-shell app-footer__inner">
+      <span>Basera. Grow local.</span>
+      <ul class="app-footer__links">
+        <li><a href="{% url 'privacy' %}">Privacy</a></li>
+        <li><a href="{% url 'terms' %}">Terms</a></li>
+        <li><a href="{% url 'help' %}">Help</a></li>
+      </ul>
+    </div>
+  </footer>
+</div>
+{% endblock %}

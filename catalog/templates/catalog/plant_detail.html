@@ -1,0 +1,57 @@
+{% extends "catalog/app_base.html" %}
+
+{% block title %}{{ listing.common_name }}{% endblock %}
+{% block breadcrumb %}<a href="{% url 'home' %}">Home</a><span aria-hidden="true">›</span><span>Catalogue</span><span aria-hidden="true">›</span><span aria-current="page">{{ listing.common_name }}</span>{% endblock %}
+{% block page_title %}Plant details{% endblock %}
+{% block page_lede %}Everything you need to know before you grow it.{% endblock %}
+
+{% block content %}
+{% if messages %}
+  <div class="app-messages">
+    {% for message in messages %}
+      <p class="app-notice app-notice--{% if message.level_tag == 'error' %}error{% else %}success{% endif %}" role="status">
+        {% include "catalog/includes/icon.html" with name="info" %} {{ message }}
+      </p>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<article class="app-detail">
+  <div class="app-detail__media">
+    <span class="app-tag">Native</span>
+    {% if listing.image %}
+      <img src="{{ listing.image.url }}" alt="{{ listing.common_name }}">
+    {% else %}
+      <span class="app-leaf" role="img" aria-label="No photo yet">{% include "catalog/includes/icon.html" with name="leaf" size=48 %}</span>
+    {% endif %}
+  </div>
+
+  <div class="app-detail__info">
+    <h2 class="app-detail__name basera-display">{{ listing.common_name }}</h2>
+    <p class="app-detail__scientific">{{ listing.scientific_name }}</p>
+    <p class="app-detail__price">Rs {{ listing.price|floatformat:"-2" }}</p>
+    {% if not listing.is_active %}
+      <p class="app-stock app-stock--out">Not for sale</p>
+    {% elif listing.stock_qty > 0 %}
+      <p class="app-stock">In stock · {{ listing.stock_qty }} available</p>
+    {% else %}
+      <p class="app-stock app-stock--out">Out of stock</p>
+    {% endif %}
+    <p class="app-detail__description">{{ listing.description|linebreaksbr }}</p>
+
+    <ul class="app-tags" aria-label="Growing needs">
+      <li>{% include "catalog/includes/icon.html" with name="sun" size=14 %} {{ listing.get_light_need_display }}</li>
+      <li>{% include "catalog/includes/icon.html" with name="drop" size=14 %} {{ listing.get_water_need_display }} water</li>
+      {% for soil in listing.soil_list %}<li>{% include "catalog/includes/icon.html" with name="layers" size=14 %} {{ soil }}</li>{% endfor %}
+      <li>{% include "catalog/includes/icon.html" with name="home" size=14 %} {{ listing.get_setting_display }}</li>
+      {% for role in listing.ecological_role_list %}<li>{% include "catalog/includes/icon.html" with name="role" size=14 %} {{ role }}</li>{% endfor %}
+    </ul>
+
+    <dl class="app-facts">
+      <div><dt>Native to:</dt><dd>{% for region in listing.regions.all %}{{ region.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd></div>
+      <div><dt>Seller:</dt><dd>{{ listing.seller.full_name|default:"Basera seller" }}</dd></div>
+      <div><dt>Ecological role:</dt><dd>{{ listing.ecological_role }}</dd></div>
+    </dl>
+  </div>
+</article>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Not allowed{% endblock %}
+
+{% block content %}
+<div class="basera-auth">
+  <section class="basera-welcome">
+    <p class="basera-eyebrow">Error 403</p>
+    <h1 class="basera-hero basera-display">Not your<br>patch.</h1>
+    <p class="basera-lede">You don’t have permission to open this page.</p>
+  </section>
+
+  <section class="basera-panel" aria-labelledby="forbidden-title">
+    <div class="basera-panel__header">
+      <h2 id="forbidden-title" class="basera-panel__title basera-display">Access denied</h2>
+      <p class="basera-panel__subtitle">{% if exception %}{{ exception }}{% else %}This page is for a different kind of account.{% endif %}</p>
+    </div>
+    <a class="basera-btn-primary" href="{% url 'home' %}"><span class="basera-btn-primary__label">Go to Home</span></a>
+  </section>
+</div>
+{% endblock %}

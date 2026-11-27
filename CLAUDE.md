@@ -40,7 +40,11 @@ the `basera_app` role is allowed to create the test database).
 | Show/Hide password script (reusable) | `accounts/static/accounts/js/password-toggle.js` |
 | Scroll parallax + button loading state | `accounts/static/accounts/js/basera.js` |
 | Background illustration | `accounts/static/accounts/img/background.png` |
-| Tests | `accounts/tests.py`, `accounts/test_views.py`, `catalog/tests.py`, `orders/tests.py` |
+| Add a plant (US-13) form, views, URLs | `catalog/forms.py`, `catalog/views.py`, `catalog/urls.py` |
+| Signed-in page shell (light "botanical" look from the wireframes) | `catalog/templates/catalog/app_base.html` (extends `accounts/base.html`) |
+| Styles + tokens for signed-in pages | `catalog/static/catalog/css/app.css` |
+| 403 page | `accounts/templates/403.html` |
+| Tests | `accounts/tests.py`, `accounts/test_views.py`, `catalog/tests.py`, `catalog/test_views.py`, `orders/tests.py` |
 
 **Every new page should `{% extends "accounts/base.html" %}`** so it gets the
 same fonts, background, header, footer and motion. Use the `basera-*` classes and
@@ -48,7 +52,8 @@ CSS variables in `basera.css`; don't hard-code colours or fonts in templates.
 
 URL names: `login` (/), `logout` (POST only), `signup`, `forgot_password`,
 `password_reset_confirm` (the emailed link), `home` (login required), `privacy`,
-`terms`, `help`. `home` is a placeholder (`accounts/templates/accounts/home.html`)
+`terms`, `help`, `listing_add` (/seller/plants/add/, sellers only, others get 403),
+`plant_detail` (/plants/<id>/). `home` is a placeholder (`accounts/templates/accounts/home.html`)
 until the real Home page is built; `privacy`, `terms` and `help` use
 `placeholder.html`.
 

@@ -38,10 +38,12 @@ class CatalogConstraintTests(TestCase):
         self.species.refresh_from_db()
         self.assertEqual(self.species.stock_qty, 0)
 
-    def test_price_not_negative(self):
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            PlantSpecies.objects.filter(pk=self.species.pk).update(price=Decimal("-0.01"))
-        PlantSpecies.objects.filter(pk=self.species.pk).update(price=Decimal("0.00"))
+    def test_price_more_than_zero(self):
+        # US-13: price must be greater than 0 (enforced by the database too).
+        for price in (Decimal("-0.01"), Decimal("0.00")):
+            with self.assertRaises(IntegrityError), transaction.atomic():
+                PlantSpecies.objects.filter(pk=self.species.pk).update(price=price)
+        PlantSpecies.objects.filter(pk=self.species.pk).update(price=Decimal("0.01"))
 
     def test_setting_must_be_valid(self):
         with self.assertRaises(IntegrityError), transaction.atomic():

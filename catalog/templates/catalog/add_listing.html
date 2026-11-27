@@ -1,0 +1,160 @@
+{% extends "catalog/app_base.html" %}
+{% load static %}
+
+{% block title %}Add a plant{% endblock %}
+{% block breadcrumb %}<a href="{% url 'home' %}">Overview</a><span aria-hidden="true">›</span><span>My plants</span><span aria-hidden="true">›</span><span aria-current="page">Add</span>{% endblock %}
+{% block page_title %}Add a plant{% endblock %}
+{% block page_lede %}List a native plant so buyers can find it.{% endblock %}
+
+{% block content %}
+<div class="app-form-layout">
+  <form class="app-form" method="post" action="{% url 'listing_add' %}" enctype="multipart/form-data" novalidate
+        id="listing-form" data-max-image-bytes="{{ max_image_bytes }}">
+    {% csrf_token %}
+
+    {# ---------- About the plant ---------- #}
+    <section class="app-section" aria-labelledby="about-title">
+      <div class="app-section__header">
+        <h2 id="about-title" class="app-section__title basera-display">About the plant</h2>
+        <p class="app-section__lede">Tell buyers what it is. Everything is required unless marked optional.</p>
+      </div>
+
+      {% if form.errors %}
+        <p class="app-notice app-notice--error" role="alert">
+          {% include "catalog/includes/icon.html" with name="alert" %}
+          Please fix the highlighted fields and try again.
+        </p>
+      {% endif %}
+
+      <div class="app-grid-2">
+        <div class="app-field">
+          <label class="app-label" for="id_common_name">Common name</label>
+          <input class="app-input{% if form.common_name.errors %} is-invalid{% endif %}" type="text" id="id_common_name" name="common_name"
+                 value="{{ form.common_name.value|default_if_none:'' }}" placeholder="e.g. Neem" maxlength="150" required
+                 data-preview="name"
+                 {% if form.common_name.errors %}aria-invalid="true" aria-describedby="common_name-error"{% endif %}>
+          {% if form.common_name.errors %}<p class="app-error" id="common_name-error">{{ form.common_name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="app-field">
+          <label class="app-label" for="id_scientific_name">Scientific name</label>
+          <input class="app-input{% if form.scientific_name.errors %} is-invalid{% endif %}" type="text" id="id_scientific_name" name="scientific_name"
+                 value="{{ form.scientific_name.value|default_if_none:'' }}" placeholder="e.g. Azadirachta indica" maxlength="200" required
+                 data-preview="scientific"
+                 {% if form.scientific_name.errors %}aria-invalid="true" aria-describedby="scientific_name-error"{% endif %}>
+          {% if form.scientific_name.errors %}<p class="app-error" id="scientific_name-error">{{ form.scientific_name.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div class="app-field">
+        <label class="app-label" for="id_description">Description</label>
+        <textarea class="app-input app-textarea{% if form.description.errors %} is-invalid{% endif %}" id="id_description" name="description" rows="3"
+                  placeholder="Describe the plant and how it grows" required
+                  {% if form.description.errors %}aria-invalid="true" aria-describedby="description-error"{% endif %}>{{ form.description.value|default_if_none:'' }}</textarea>
+        {% if form.description.errors %}<p class="app-error" id="description-error">{{ form.description.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="app-field">
+        <span class="app-label" id="photo-label">Photo (optional)</span>
+        <label class="app-drop{% if form.image.errors %} is-invalid{% endif %}" for="id_image" data-drop>
+          <input class="app-drop__input" type="file" id="id_image" name="image" accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                 aria-labelledby="photo-label" aria-describedby="photo-hint{% if form.image.errors %} photo-error{% endif %}"
+                 {% if form.image.errors %}aria-invalid="true"{% endif %}>
+          {% include "catalog/includes/icon.html" with name="upload" size=18 %}
+          <span class="app-drop__title" data-drop-title>{% if rejected_file %}Choose a different file{% else %}Drag a photo here or choose a file{% endif %}</span>
+          <span class="app-drop__hint" id="photo-hint" data-drop-hint>{% if rejected_file %}{{ rejected_file.name }}, {{ rejected_file.size|filesizeformat }} was not added{% else %}JPG or PNG, under 2 MB. Without a photo, buyers see a leaf placeholder.{% endif %}</span>
+        </label>
+        <p class="app-error" id="photo-error" data-drop-error {% if not form.image.errors %}hidden{% endif %}>{{ form.image.errors.0|default:"Please use a JPG or PNG under 2 MB." }}</p>
+      </div>
+    </section>
+
+    {# ---------- Where it thrives ---------- #}
+    <section class="app-section" aria-labelledby="thrives-title">
+      <div class="app-section__header">
+        <h2 id="thrives-title" class="app-section__title basera-display">Where it thrives</h2>
+        <p class="app-section__lede">These answers decide which grow profiles it matches.</p>
+      </div>
+
+      {% include "catalog/includes/choice_group.html" with field=form.regions options=groups.regions legend="Native regions (choose one or more)" kind="chip" type="checkbox" icon="pin" %}
+      {% include "catalog/includes/choice_group.html" with field=form.light_need options=groups.light_need legend="Light" kind="card" type="radio" %}
+      {% include "catalog/includes/choice_group.html" with field=form.water_need options=groups.water_need legend="Water" kind="card" type="radio" %}
+      {% include "catalog/includes/choice_group.html" with field=form.soils options=groups.soils legend="Soil (choose one or more)" kind="card" type="checkbox" columns=4 %}
+      {% include "catalog/includes/choice_group.html" with field=form.setting options=groups.setting legend="Setting" kind="card" type="radio" %}
+      {% include "catalog/includes/choice_group.html" with field=form.ecological_roles options=groups.ecological_roles legend="Ecological role (choose one or more)" kind="chip" type="checkbox" icon="role" %}
+    </section>
+
+    {# ---------- Price and stock ---------- #}
+    <section class="app-section" aria-labelledby="price-title">
+      <div class="app-section__header">
+        <h2 id="price-title" class="app-section__title basera-display">Price and stock</h2>
+        <p class="app-section__lede">You can change these any time from My plants.</p>
+      </div>
+
+      <div class="app-grid-2">
+        <div class="app-field">
+          <label class="app-label" for="id_price">Price (Rs)</label>
+          <input class="app-input{% if form.price.errors %} is-invalid{% endif %}" type="number" id="id_price" name="price"
+                 value="{{ form.price.value|default_if_none:'' }}" placeholder="e.g. 450" min="0.01" step="0.01" inputmode="decimal" required
+                 data-preview="price"
+                 aria-describedby="{% if form.price.errors %}price-error{% else %}price-hint{% endif %}"
+                 {% if form.price.errors %}aria-invalid="true"{% endif %}>
+          {% if form.price.errors %}
+            <p class="app-error" id="price-error">{{ form.price.errors.0 }}</p>
+          {% else %}
+            <p class="app-hint" id="price-hint">Must be more than Rs 0.</p>
+          {% endif %}
+        </div>
+
+        <div class="app-field">
+          <label class="app-label" for="id_stock_qty">Stock</label>
+          <input class="app-input{% if form.stock_qty.errors %} is-invalid{% endif %}" type="number" id="id_stock_qty" name="stock_qty"
+                 value="{{ form.stock_qty.value|default_if_none:'' }}" placeholder="e.g. 24" min="0" step="1" inputmode="numeric" required
+                 data-preview="stock"
+                 aria-describedby="{% if form.stock_qty.errors %}stock-error{% else %}stock-hint{% endif %}"
+                 {% if form.stock_qty.errors %}aria-invalid="true"{% endif %}>
+          {% if form.stock_qty.errors %}
+            <p class="app-error" id="stock-error">{{ form.stock_qty.errors.0 }}</p>
+          {% else %}
+            <p class="app-hint" id="stock-hint">Enter 0 if it is out of stock.</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <div class="app-actions">
+      <button class="basera-btn-primary app-btn-primary" type="submit" data-loading-text="Publishing…">
+        <span class="basera-btn-primary__label">Publish listing</span>
+      </button>
+      <a class="app-btn-secondary" href="{% url 'home' %}">Cancel</a>
+    </div>
+  </form>
+
+  {# ---------- Live preview ---------- #}
+  <aside class="app-aside" aria-labelledby="preview-title">
+    <div class="app-preview">
+      <h2 id="preview-title" class="app-preview__title basera-display">Listing preview</h2>
+      <p class="app-preview__lede">How buyers will see it in the catalogue.</p>
+      <div class="app-plant-card" aria-live="polite">
+        <div class="app-plant-card__media" data-preview-media>
+          <span class="app-leaf">{% include "catalog/includes/icon.html" with name="leaf" size=28 %}</span>
+        </div>
+        <div class="app-plant-card__body">
+          <p class="app-plant-card__name basera-display" data-preview-out="name" data-empty="Plant name">{{ form.common_name.value|default:"Plant name" }}</p>
+          <p class="app-plant-card__scientific" data-preview-out="scientific" data-empty="Scientific name">{{ form.scientific_name.value|default:"Scientific name" }}</p>
+          <p class="app-plant-card__price">Rs <span data-preview-out="price" data-empty="0">{{ form.price.value|default:"0" }}</span></p>
+          <p class="app-plant-card__stock" data-preview-out="stock">Add stock</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="app-notice{% if form.errors %} app-notice--warning{% else %} app-notice--info{% endif %}">
+      {% include "catalog/includes/icon.html" with name="info" %}
+      {% if form.errors %}Nothing is published until every highlighted field is fixed.{% else %}Once published, your plant appears in the catalogue straight away.{% endif %}
+    </p>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'catalog/js/add-listing.js' %}"></script>
+{% endblock %}
