@@ -2,7 +2,7 @@
 
 {% block title %}My grow profiles{% endblock %}
 
-{% comment %}US-06: the customer's saved profiles (Figma "My Grow Profiles"). Needs: profiles (each with .summary).{% endcomment %}
+{% comment %}US-06 and US-07: the customer's saved profiles (Figma "My Grow Profiles"). Needs: profiles (each with .summary).{% endcomment %}
 
 {% block content %}
 <div class="bt-container">
@@ -27,7 +27,10 @@
           <li class="bt-chip">{{ profile.summary.water }}</li>
           <li class="bt-chip">{{ profile.summary.purpose }}</li>
         </ul>
-        <div class="bt-actions"><a class="bt-btn" href="{% url 'match_profile' profile.pk %}">Find plants</a></div>
+        <div class="bt-actions">
+          <a class="bt-btn" href="{% url 'match_profile' profile.pk %}">Find plants</a>
+          <a class="bt-btn bt-btn--outline" href="{% url 'grow_profile_edit' profile.pk %}">Edit<span class="bt-visually-hidden"> {{ profile.name }}</span></a>
+        </div>
       </li>
       {% endfor %}
     </ul>

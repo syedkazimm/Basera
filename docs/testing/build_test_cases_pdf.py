@@ -341,6 +341,20 @@ NEW_SECT += [
     ]),
 ]
 
+GE = "growprofiles.test_views.EditGrowProfileTests."
+NEW_SECT += [
+    ("A22. Edit a grow profile - US-07 (growprofiles/test_views.py)", [
+        ("GE-01", "Open Edit on a saved profile", "The form is filled in with the saved answers", GE + "test_the_form_opens_filled_in_with_the_saved_answers"),
+        ("GE-02", "Save valid changes", "The same profile is updated and a success message shown", GE + "test_saving_changes_the_same_profile"),
+        ("GE-03", "Save with an invalid answer", "Error shown, typed values kept, nothing changed", GE + "test_a_failed_save_changes_nothing_and_keeps_what_was_typed"),
+        ("GE-04", "Open or save another customer's profile", "404; nothing changes", GE + "test_another_customers_profile_answers_404_and_is_untouched"),
+        ("GE-05", "Forged request naming another owner", "Ignored; the owner stays the same", GE + "test_the_owner_cannot_be_changed_through_the_form"),
+        ("GE-06", "Logged-out visitor or seller edits", "Sent to log in or Home; nothing changes", GE + "test_logged_out_visitors_and_sellers_cannot_edit"),
+        ("GE-07", "Edit a profile used by an earlier order", "The order stays as it was", GE + "test_earlier_orders_stay_as_they_were"),
+        ("GE-08", "Edit buttons", "On My grow profiles and on the match results", GE + "test_the_list_and_the_match_results_link_to_the_edit_page"),
+    ]),
+]
+
 # --------------------------------------------------------------------------------------
 # Manual cases: (ID, test case, expected result, result)
 # Result words: Pass | Carried over (files unchanged since Shehroze's run) | Not re-run | Open
@@ -488,7 +502,7 @@ def build(out):
         Paragraph(f"Run on the dev branch (commit {commit}, branch {branch}) on {date.today():%d %B %Y}. "
                   "Sections A1 to A6 and tests M-01 to M-19 are Shehroze's original cases, re-run on dev. "
                   "Sections A7 to A21, M-20 to M-47 and section C were added after the catalogue, cart, grow profile, "
-                  "matching and landing page work was merged, and production setup was added. A21 covers My Profile (US-05).", note),
+                  "matching and landing page work was merged, and production setup was added. A21 covers My Profile (US-05) and A22 editing a grow profile (US-07).", note),
         Paragraph("Result words: Pass = performed and passed. Carried over = the files are unchanged since Shehroze's "
                   "passing run (checked with git diff). Not re-run = could not be repeated in this run (reason given). "
                   "Open = a known gap to close before release.", note),

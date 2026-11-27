@@ -1,18 +1,18 @@
 {% extends "accounts/site_base.html" %}
 
-{% block title %}Create a grow profile{% endblock %}
+{% block title %}{{ band_title }}{% endblock %}
 
 {% comment %}
-  US-06 (Figma "Create Grow Profile"). Posts to itself; the form uses novalidate so
-  the server shows the styled errors. Needs: form (growprofiles.forms.GrowProfileForm).
+  US-06 and US-07 (Figma "Create Grow Profile", reused for editing). Posts to itself; the form uses novalidate so
+  the server shows the styled errors. Needs: form (growprofiles.forms.GrowProfileForm), heading, intro, submit_label, weights.
 {% endcomment %}
 
 {% block content %}
 <div class="bt-container bt-formpage">
   <form class="bt-form" method="post" novalidate>
     {% csrf_token %}
-    <h2>Describe your space</h2>
-    <p class="bt-muted">Answer six quick questions. You can change them later.</p>
+    <h2>{{ heading }}</h2>
+    <p class="bt-muted">{{ intro }}</p>
 
     {% if form.errors %}<p class="bt-notice bt-notice--error" role="alert">Please fix the highlighted fields and try again.</p>{% endif %}
 
@@ -66,7 +66,7 @@
     {% endfor %}
 
     <div class="bt-actions">
-      <button class="bt-btn" type="submit">Save grow profile</button>
+      <button class="bt-btn" type="submit">{{ submit_label }}</button>
       <a class="bt-btn bt-btn--outline" href="{% url 'grow_profiles' %}">Cancel</a>
     </div>
   </form>

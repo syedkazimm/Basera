@@ -1,10 +1,11 @@
-"""US-06: create a grow profile, and see your saved profiles listed."""
+"""US-06: create a grow profile and see it listed. US-07: edit it."""
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import User
 from catalog.models import Region
+from orders.models import Order
 
 from .models import GrowProfile
 
@@ -122,3 +123,79 @@ class ProfileListTests(TestCase):
         seller = User.objects.create_user("s@example.com", "x", full_name="Sam", role=User.Role.SELLER)
         self.client.force_login(seller)
         self.assertRedirects(self.client.get("/profiles/"), reverse("home"))
+
+
+@FAST_HASHERS
+class EditGrowProfileTests(TestCase):
+    """US-07: change a saved profile."""
+
+    def setUp(self):
+        self.region = Region.objects.create(name="Punjab Plains")
+        self.other_region = Region.objects.create(name="Potohar Plateau")
+        self.ana = User.objects.create_user("ana@example.com", "x", full_name="Ana Khan")
+        self.bo = User.objects.create_user("bo@example.com", "x", full_name="Bo Ali")
+        self.profile = GrowProfile.objects.create(user=self.ana, region=self.region, **VALID)
+        self.url = reverse("grow_profile_edit", args=[self.profile.pk])
+        self.client.force_login(self.ana)
+
+    def data(self, **changes):
+        return {**VALID, "region": self.other_region.pk, **changes}
+
+    def test_the_form_opens_filled_in_with_the_saved_answers(self):
+        page = self.client.get(self.url)
+        self.assertContains(page, "Edit grow profile")
+        self.assertContains(page, 'value="Backyard"')
+        self.assertContains(page, f'<option value="{self.region.pk}" selected>Punjab Plains</option>', html=True)
+        for code in ("OUTDOOR", "FULL_SUN", "LOAM", "MEDIUM", "SHADE_COOLING"):
+            self.assertContains(page, f'value="{code}" checked')
+        self.assertContains(page, "Save changes")
+        self.assertNotContains(page, "Save grow profile")
+
+    def test_saving_changes_the_same_profile(self):
+        response = self.client.post(self.url, self.data(name="Roof", sunlight="SHADE"), follow=True)
+        self.assertRedirects(response, reverse("grow_profiles"))
+        self.assertContains(response, "Saved your changes to")
+        profile = GrowProfile.objects.get()
+        self.assertEqual((profile.pk, profile.name, profile.region, profile.sunlight),
+                         (self.profile.pk, "Roof", self.other_region, "SHADE"))
+
+    def test_a_failed_save_changes_nothing_and_keeps_what_was_typed(self):
+        response = self.client.post(self.url, self.data(name="Roof", soil_type="MOON"))
+        self.assertContains(response, "Please choose your soil.")
+        self.assertContains(response, 'value="Roof"')
+        self.assertContains(response, "Update the answers for Backyard.")
+        self.profile.refresh_from_db()
+        self.assertEqual((self.profile.name, self.profile.region), ("Backyard", self.region))
+
+    def test_another_customers_profile_answers_404_and_is_untouched(self):
+        self.client.force_login(self.bo)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertEqual(self.client.post(self.url, self.data(name="Stolen")).status_code, 404)
+        self.profile.refresh_from_db()
+        self.assertEqual((self.profile.name, self.profile.user), ("Backyard", self.ana))
+
+    def test_the_owner_cannot_be_changed_through_the_form(self):
+        self.client.post(self.url, self.data(user=self.bo.pk))
+        self.assertEqual(GrowProfile.objects.get().user, self.ana)
+
+    def test_logged_out_visitors_and_sellers_cannot_edit(self):
+        self.client.logout()
+        self.assertRedirects(self.client.get(self.url), f"/?next={self.url}")
+        seller = User.objects.create_user("s@example.com", "x", full_name="Sam", role=User.Role.SELLER)
+        self.client.force_login(seller)
+        self.assertRedirects(self.client.post(self.url, self.data(name="Taken")), reverse("home"))
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.name, "Backyard")
+
+    def test_earlier_orders_stay_as_they_were(self):
+        order = Order.objects.create(user=self.ana, grow_profile=self.profile, delivery_name="Ana",
+                                     delivery_address="1 Road", city="Lahore", phone="03001234567",
+                                     total_amount=500)
+        before = Order.objects.filter(pk=order.pk).values().get()
+        self.client.post(self.url, self.data(name="Roof"))
+        self.assertEqual(Order.objects.filter(pk=order.pk).values().get(), before)
+
+    def test_the_list_and_the_match_results_link_to_the_edit_page(self):
+        for page in (reverse("grow_profiles"), reverse("match_profile", args=[self.profile.pk])):
+            self.assertContains(self.client.get(page), f'href="{self.url}"')
+

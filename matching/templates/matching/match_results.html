@@ -16,6 +16,7 @@
       <li class="bt-chip">{{ summary.sunlight }}</li><li class="bt-chip">{{ summary.soil }}</li>
       <li class="bt-chip">{{ summary.water }}</li><li class="bt-chip">{{ summary.purpose }}</li>
     </ul>
+    <a class="bt-btn bt-btn--outline bt-profilebar__edit" href="{% url 'grow_profile_edit' profile.pk %}">Edit profile</a>
   </section>
 
   {% if not has_fit %}
