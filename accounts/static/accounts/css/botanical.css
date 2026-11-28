@@ -761,6 +761,24 @@ h1, h2, h3 {
   .bt-profiles { grid-template-columns: 1fr; }
 }
 
+/* ---------- My profile (US-05) ---------- */
+
+.bt-field__hint { margin: 0; font-size: 14px; line-height: 21px; color: var(--bt-muted); }
+.bt-field--readonly label, .bt-field--readonly .bt-input { opacity: 0.65; }
+.bt-account { padding: 28px; background: var(--bt-sand); display: grid; gap: 12px; }
+.bt-account h3 { font-size: 24px; line-height: 29px; }
+.bt-account > p { margin: 0; font-size: 16px; line-height: 24px; }
+.bt-account__facts { margin: 0; padding-bottom: 14px; display: grid; gap: 12px; border-bottom: 1px solid var(--bt-line); }
+.bt-account__facts > div { display: flex; justify-content: space-between; gap: 12px; }
+.bt-account__facts dt, .bt-account__facts dd { margin: 0; font-size: 16px; line-height: 24px; color: var(--bt-forest); }
+.bt-account__facts dd { color: var(--bt-muted); }
+.bt-account__links { list-style: none; margin: 0; padding: 0; display: grid; }
+.bt-account__links a { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; color: var(--bt-forest); text-decoration: none; }
+.bt-account__links a:hover { text-decoration: underline; }
+a.bt-account-menu__name { display: inline-flex; align-items: center; min-height: 44px; }
+.bt-profilepage .bt-form .bt-notice { margin: 0; }
+@media (max-width: 700px) { .bt-profilepage .bt-actions .bt-btn { width: 100%; } }
+
 /* ---------- Match results ---------- */
 
 .bt-profilebar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 16px 22px; margin-bottom: 36px; color: var(--bt-forest); }

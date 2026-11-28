@@ -10,7 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from . import landing
-from .forms import LoginForm, SignUpForm
+from .forms import LoginForm, ProfileForm, SignUpForm
 from .models import User
 from .ui import page_band
 
@@ -87,6 +87,28 @@ def home_view(request):
         context = landing.customer_context()
     context["viewer"] = "customer" if user.is_customer else "other"
     return render(request, HOME_TEMPLATES[user.role], context)
+
+
+@login_required
+def profile_view(request):
+    """My Profile (US-05). Always the logged-in user's own details: there is no id in the URL."""
+    if request.method == "POST":
+        # A separate copy, so rejected input never shows up as request.user in the header.
+        form = ProfileForm(request.POST, instance=User.objects.get(pk=request.user.pk))
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your profile has been updated.")
+            return redirect("profile")
+    else:
+        form = ProfileForm(instance=request.user)
+
+    context = {
+        "form": form,
+        "profile_count": request.user.grow_profiles.count() if request.user.is_customer else None,
+        **page_band(request, "My profile", "Keep your contact and delivery details up to date.",
+                    ("My profile", None)),
+    }
+    return render(request, "accounts/profile.html", context)
 
 
 class ForgotPasswordView(auth_views.PasswordResetView):

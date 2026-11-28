@@ -123,6 +123,8 @@ Rule used everywhere: the ERD marks only `grow_profile_id` as nullable, so
 | password_hash | password | varchar(128) | Django salted hash (PBKDF2 by default), set only via `set_password()` |
 | full_name | full_name | varchar(150) | required |
 | phone | phone | varchar(20) | may be empty |
+| (not in ERD) | default_address | text | may be empty; database default '' (D17) |
+| (not in ERD) | default_city | varchar(60) | may be empty; database default '' (D17) |
 | role | role | varchar(10) | CHECK in ('CUSTOMER','SELLER','ADMIN'); default CUSTOMER |
 | is_active | is_active | boolean | default true |
 | date_joined | date_joined | timestamptz | default now |
@@ -275,3 +277,8 @@ Every FK column has an index (Django adds them automatically).
 - **D16. Extra index choice.** Besides PK, UNIQUE and FK indexes, Django adds a
   `varchar_pattern_ops` index on the unique `email` and `region.name` columns (for
   `LIKE` lookups). No other indexes were added; add them when real queries need them.
+- **D17. Delivery defaults on the user (US-05).** `default_address` and `default_city`
+  are saved on My Profile so checkout (US-21) can prefill the delivery form. Orders
+  keep their own copy, so editing the profile never changes a placed order. Both have
+  a database default, so code written before them can still insert users. The
+  Pakistani phone format is checked by `ProfileForm`, not by the database.

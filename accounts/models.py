@@ -11,6 +11,8 @@ ERD columns -> Django fields
     is_active     -> is_active
     date_joined   -> date_joined
 
+Columns added for US-05 (not in the ERD): default_address, default_city.
+
 Extra columns that Django's auth framework needs (not in the ERD):
     last_login   (from AbstractBaseUser, set by Django on every login)
     is_superuser (from PermissionsMixin, plus the groups / user_permissions
@@ -79,6 +81,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     # `password` (ERD: password_hash) is inherited from AbstractBaseUser.
     full_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20, blank=True)
+    # Filled in on My Profile (US-05) and used to prefill the delivery form at checkout.
+    # db_default keeps a default in the database itself, so code from before these
+    # columns existed (an older branch, or the old site during a deploy) can still add users.
+    default_address = models.TextField(blank=True, default="", db_default="")
+    default_city = models.CharField(max_length=60, blank=True, default="", db_default="")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.CUSTOMER)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)

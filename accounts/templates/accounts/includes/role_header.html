@@ -23,7 +23,7 @@
         <a class="bt-nav-link" href="{% url 'help' %}">Help</a>
         <form method="post" action="{% url 'logout' %}" class="bt-account-menu">
           {% csrf_token %}
-          <span class="bt-account-menu__name">{% if role_label == "Seller" %}{{ user.full_name }}{% else %}{{ user.full_name|default:"Basera team" }}{% endif %}</span>
+          <a class="bt-account-menu__name" href="{% url 'profile' %}" title="My profile">{% if role_label == "Seller" %}{{ user.full_name }}{% else %}{{ user.full_name|default:"Basera team" }}{% endif %}</a>
           <button class="bt-link-button" type="submit">Log out</button>
         </form>
       </div>
