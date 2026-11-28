@@ -56,10 +56,12 @@
     window.setTimeout(function () { dismiss(node); }, TOAST_LIFE);
   }
 
-  document.addEventListener("cart:notice", function (event) {
+  function show(event) {
     var detail = event.detail || {};
     toast(detail.message, detail.level);
-  });
+  }
+  document.addEventListener("cart:notice", show);
+  document.addEventListener("basera:notice", show);
 
   var usedControl = null;
 
@@ -80,5 +82,33 @@
     var twin = document.querySelector('[data-cart-action="' + usedControl + '"]');
     if (twin && !twin.disabled) twin.focus({ preventScroll: true });
     usedControl = null;
+  });
+})();
+// 4. Confirm dialogs. htmx drops a <dialog data-modal> into the page; open it as
+//    a modal (focus stays inside, Escape closes it), and tidy up when it closes.
+//    If the thing was deleted, its card and button are gone, so focus moves to
+//    the list's heading.
+(function () {
+  var opener = null;
+
+  document.addEventListener("htmx:beforeRequest", function (event) {
+    var el = event.detail && event.detail.elt;
+    if (el && el.getAttribute && el.getAttribute("hx-target") === "#bt-dialog") opener = el;
+  });
+
+  document.addEventListener("htmx:afterSettle", function () {
+    var dialog = document.querySelector("dialog[data-modal]:not([open])");
+    if (dialog && !dialog.dataset.shown) {
+      dialog.dataset.shown = "1";
+      dialog.addEventListener("close", function () {
+        dialog.remove();
+        if (opener && opener.isConnected) opener.focus();
+      });
+      dialog.showModal();
+    } else if (opener && !opener.isConnected && !document.querySelector("dialog[data-modal]")) {
+      var heading = document.querySelector("#profiles-body h2");
+      if (heading) heading.focus({ preventScroll: true });
+      opener = null;
+    }
   });
 })();

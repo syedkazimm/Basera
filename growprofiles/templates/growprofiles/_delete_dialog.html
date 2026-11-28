@@ -1,0 +1,12 @@
+<dialog class="bt-confirm" data-modal aria-labelledby="confirm-title">
+  {% include "growprofiles/_delete_question.html" %}
+  <div class="bt-confirm__actions">
+    <form method="post" action="{% url 'grow_profile_delete' profile.pk %}"
+          hx-post="{% url 'grow_profile_delete' profile.pk %}" hx-target="#profiles-body" hx-swap="outerHTML"
+          hx-disabled-elt="find button">
+      {% csrf_token %}
+      <button class="bt-btn bt-btn--danger" type="submit">Delete profile</button>
+    </form>
+    <form method="dialog"><button class="bt-btn bt-btn--outline" autofocus>Keep it</button></form>
+  </div>
+</dialog>

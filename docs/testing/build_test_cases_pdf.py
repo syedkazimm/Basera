@@ -355,6 +355,22 @@ NEW_SECT += [
     ]),
 ]
 
+GD = "growprofiles.test_views.DeleteGrowProfileTests."
+NEW_SECT += [
+    ("A23. Delete a grow profile - US-07 (growprofiles/test_views.py)", [
+        ("GD-01", "My grow profiles", "Name, region, purpose and Find plants, Edit and Delete on each card", GD + "test_the_list_shows_name_region_purpose_and_all_three_buttons"),
+        ("GD-02", "Choose Delete", "A confirmation is shown; nothing deleted yet", GD + "test_asking_to_delete_shows_a_confirmation_page_and_deletes_nothing"),
+        ("GD-03", "Confirm the deletion", "Only that profile goes; success message", GD + "test_confirming_deletes_only_that_profile"),
+        ("GD-04", "Delete a profile used by an order", "The order stays, with the profile link cleared", GD + "test_orders_that_used_the_profile_stay_with_the_link_cleared"),
+        ("GD-05", "Delete the last profile in a region", "The region stays", GD + "test_the_region_stays_when_its_last_profile_goes"),
+        ("GD-06", "Delete with JavaScript on", "The question opens as a dialog", GD + "test_with_htmx_the_question_is_a_dialog"),
+        ("GD-07", "Confirm in the dialog", "The card goes without a reload, with a notice", GD + "test_with_htmx_confirming_returns_the_new_list_and_a_notice"),
+        ("GD-08", "Open or delete another customer's profile", "404; the profile survives", GD + "test_another_customers_profile_answers_404_and_survives"),
+        ("GD-09", "Logged-out visitor or seller deletes", "Sent to log in or Home; nothing deleted", GD + "test_logged_out_visitors_and_sellers_cannot_delete"),
+        ("GD-10", "Delete without the security (CSRF) token", "Refused (403)", GD + "test_deleting_needs_the_security_token"),
+    ]),
+]
+
 # --------------------------------------------------------------------------------------
 # Manual cases: (ID, test case, expected result, result)
 # Result words: Pass | Carried over (files unchanged since Shehroze's run) | Not re-run | Open
@@ -502,7 +518,7 @@ def build(out):
         Paragraph(f"Run on the dev branch (commit {commit}, branch {branch}) on {date.today():%d %B %Y}. "
                   "Sections A1 to A6 and tests M-01 to M-19 are Shehroze's original cases, re-run on dev. "
                   "Sections A7 to A21, M-20 to M-47 and section C were added after the catalogue, cart, grow profile, "
-                  "matching and landing page work was merged, and production setup was added. A21 covers My Profile (US-05) and A22 editing a grow profile (US-07).", note),
+                  "matching and landing page work was merged, and production setup was added. A21 covers My Profile (US-05) and A22 and A23 editing and deleting a grow profile (US-07).", note),
         Paragraph("Result words: Pass = performed and passed. Carried over = the files are unchanged since Shehroze's "
                   "passing run (checked with git diff). Not re-run = could not be repeated in this run (reason given). "
                   "Open = a known gap to close before release.", note),

@@ -22,6 +22,8 @@
   --bt-orange: #e8873a;
   --bt-coral: #d9573f;
   --bt-coral-tint: #fbe3dc;
+  --bt-danger: #c42525;
+  --bt-danger-deep: #a51d1d;
 
   --bt-shadow: 0 5px 16px rgba(56, 48, 31, 0.055);
   --bt-radius: 16px;
@@ -169,6 +171,8 @@ h1, h2, h3 {
 .bt-btn--small { min-height: 44px; padding: 0 20px; }
 .bt-btn--outline { background: transparent; color: var(--bt-forest); }
 .bt-btn--outline:hover { background: var(--bt-sage-tint); }
+.bt-btn--danger { background: var(--bt-danger); color: var(--bt-on-dark); }
+.bt-btn--danger:hover { background: var(--bt-danger-deep); }
 .bt-btn--disabled, .bt-btn--disabled:hover {
   background: var(--bt-sand); border-color: var(--bt-sand); color: var(--bt-muted);
   cursor: not-allowed; transform: none;
@@ -736,10 +740,39 @@ h1, h2, h3 {
 .bt-privacy { margin: 0; display: flex; gap: 12px; align-items: flex-start; padding: 14px 20px; background: var(--bt-sand); border-left: 4px solid var(--bt-sage); font-size: 18px; line-height: 27px; color: var(--bt-forest); }
 .bt-privacy .bt-icon { flex: none; margin-top: 3px; color: var(--bt-sage); }
 
-.bt-profiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.bt-profiles .bt-chips { margin-top: 14px; }
-.bt-empty-state { text-align: center; padding: 56px 24px; display: grid; justify-items: center; gap: 12px; }
-.bt-empty-state p { margin: 0; max-width: 480px; color: var(--bt-muted); }
+/* My grow profiles (US-06, US-07): one full-width card per profile */
+.bt-profilelist { padding-top: 24px; display: grid; gap: 30px; }
+.bt-profilelist__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 30px; border-bottom: 1px solid var(--bt-line); }
+.bt-profilelist__head h2 { font-size: 30px; line-height: 39px; }
+.bt-profilelist__head p { margin: 2px 0 0; }
+.bt-profiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 30px; }
+.bt-profile { display: flex; align-items: center; gap: 30px; padding: 28px 32px; border: 1px solid var(--bt-line); border-radius: 18px; box-shadow: var(--bt-shadow); }
+.bt-profile__icon { flex: none; width: 70px; height: 70px; display: grid; place-items: center; border-radius: 50%; background: var(--bt-sage-tint); color: var(--bt-forest); }
+.bt-profile__body { flex: 1; min-width: 0; }
+.bt-profile__body h3 { font-size: 22px; line-height: 29px; overflow-wrap: anywhere; }
+.bt-profile__chips { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.bt-profile__chips li { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 12px; background: var(--bt-sage-tint); font-size: 14px; color: var(--bt-forest); }
+.bt-profile__actions { flex: none; display: grid; grid-template-columns: repeat(3, 150px); gap: 12px; }
+.bt-profile__actions .bt-btn { min-height: 46px; padding: 0 12px; font-size: 16px; }
+.bt-profilelist__note { display: flex; align-items: flex-start; gap: 12px; margin: 0; }
+.bt-profilelist__note .bt-icon { flex: none; margin-top: 2px; color: var(--bt-sage); }
+.bt-empty-state { text-align: center; padding: 70px 24px; display: grid; justify-items: center; gap: 18px; background: var(--bt-sand); border-radius: 18px; box-shadow: var(--bt-shadow); }
+.bt-empty-state .bt-profile__icon { width: 96px; height: 96px; background: var(--bt-bg); }
+.bt-empty-state h3 { font-size: 22px; }
+.bt-empty-state p { margin: 0; max-width: 520px; }
+
+/* "Are you sure?" as a dialog, or as a page without JavaScript */
+.bt-confirm { width: min(520px, calc(100% - 32px)); padding: 32px; border: 0; border-radius: 20px; background: var(--bt-card); color: var(--bt-muted); box-shadow: var(--bt-shadow); }
+.bt-confirm::backdrop { background: rgba(35, 57, 45, 0.55); }
+.bt-confirm--page { margin: 0 auto; }
+.bt-confirm__title { font-size: 30px; line-height: 39px; overflow-wrap: anywhere; }
+.bt-confirm p { margin: 14px 0 0; line-height: 27px; }
+.bt-confirm__actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+.bt-confirm__actions .bt-btn { min-height: 46px; min-width: 150px; font-size: 16px; }
+@media (max-width: 1200px) {
+  .bt-profile { flex-wrap: wrap; }
+  .bt-profile__actions { flex-basis: 100%; grid-template-columns: repeat(3, minmax(0, 150px)); }
+}
 
 @media (max-width: 1100px) { .bt-formpage { grid-template-columns: 1fr; gap: 32px; } .bt-aside { position: static; } }
 @media (max-width: 700px) {
@@ -747,7 +780,9 @@ h1, h2, h3 {
   .bt-choices__grid--3 { grid-template-columns: 1fr; }
   .bt-choices__grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bt-pills { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bt-profiles { grid-template-columns: 1fr; }
+  .bt-profile { padding: 20px; gap: 16px; }
+  .bt-profile__body { flex-basis: 100%; }
+  .bt-profile__actions { grid-template-columns: 1fr; }
 }
 
 /* ---------- My profile (US-05) ---------- */

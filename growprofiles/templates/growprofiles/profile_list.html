@@ -2,44 +2,9 @@
 
 {% block title %}My grow profiles{% endblock %}
 
-{% comment %}US-06 and US-07: the customer's saved profiles (Figma "My Grow Profiles"). Needs: profiles (each with .summary).{% endcomment %}
+{% comment %}US-06 and US-07: the customer's saved profiles (Figma "My Grow Profiles"). Needs: profiles (each with .summary and .icon).{% endcomment %}
 
 {% block content %}
-<div class="bt-container">
-  <div class="bt-section__head">
-    <div>
-      <h2 class="bt-section-title">{{ profiles|length }} grow profile{{ profiles|length|pluralize }}</h2>
-      <p class="bt-muted">A grow profile describes one growing space, such as your balcony or backyard.</p>
-    </div>
-    {% if profiles %}<a class="bt-btn" href="{% url 'grow_profile_new' %}">+ New grow profile</a>{% endif %}
-  </div>
-
-  {% if profiles %}
-    <ul class="bt-profiles">
-      {% for profile in profiles %}
-      <li class="bt-panel">
-        <h3>{{ profile.name }}</h3>
-        <ul class="bt-chips">
-          <li class="bt-chip">{{ profile.summary.region }}</li>
-          <li class="bt-chip">{{ profile.summary.space }}</li>
-          <li class="bt-chip">{{ profile.summary.sunlight }}</li>
-          <li class="bt-chip">{{ profile.summary.soil }}</li>
-          <li class="bt-chip">{{ profile.summary.water }}</li>
-          <li class="bt-chip">{{ profile.summary.purpose }}</li>
-        </ul>
-        <div class="bt-actions">
-          <a class="bt-btn" href="{% url 'match_profile' profile.pk %}">Find plants</a>
-          <a class="bt-btn bt-btn--outline" href="{% url 'grow_profile_edit' profile.pk %}">Edit<span class="bt-visually-hidden"> {{ profile.name }}</span></a>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <section class="bt-panel bt-empty-state">
-      <h3>You haven’t created a grow profile yet</h3>
-      <p>Tell us about your sunlight, soil and water once, and Basera will rank the native plants that suit your space.</p>
-      <a class="bt-btn" href="{% url 'grow_profile_new' %}">Create your first grow profile</a>
-    </section>
-  {% endif %}
-</div>
+{% include "growprofiles/_profile_list_body.html" %}
+<div id="bt-dialog"></div>
 {% endblock %}

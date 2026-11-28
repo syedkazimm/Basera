@@ -1,0 +1,48 @@
+{% comment %}
+  The list itself. Included by the page and returned on its own after an htmx
+  delete, so the card goes without a reload.
+{% endcomment %}
+<div class="bt-container bt-profilelist" id="profiles-body">
+  <div class="bt-profilelist__head">
+    <div>
+      <h2 tabindex="-1">{{ profiles|length }} grow profile{{ profiles|length|pluralize }}</h2>
+      <p class="bt-muted">A grow profile describes one growing space, such as your balcony or backyard.</p>
+    </div>
+    <a class="bt-btn" href="{% url 'grow_profile_new' %}">+ New grow profile</a>
+  </div>
+
+  {% if profiles %}
+    <ul class="bt-profiles">
+      {% for profile in profiles %}
+      <li class="bt-profile">
+        <span class="bt-profile__icon">{% include "growprofiles/_icon.html" with name=profile.icon size=30 %}</span>
+        <div class="bt-profile__body">
+          <h3>{{ profile.name }}</h3>
+          <ul class="bt-profile__chips">
+            <li>{% include "growprofiles/_icon.html" with name="pin" size=18 %}{{ profile.summary.region }}</li>
+            <li>{% include "growprofiles/_icon.html" with name="home" size=18 %}{{ profile.summary.space }}</li>
+            <li>{% include "growprofiles/_icon.html" with name="sun" size=18 %}{{ profile.summary.sunlight }}</li>
+            <li>{% include "growprofiles/_icon.html" with name="layers" size=18 %}{{ profile.summary.soil }}</li>
+            <li>{% include "growprofiles/_icon.html" with name="drop" size=18 %}{{ profile.summary.water }}</li>
+            <li>{% include "growprofiles/_icon.html" with name="target" size=18 %}{{ profile.summary.purpose }}</li>
+          </ul>
+        </div>
+        <div class="bt-profile__actions">
+          <a class="bt-btn" href="{% url 'match_profile' profile.pk %}">Find plants<span class="bt-visually-hidden"> for {{ profile.name }}</span></a>
+          <a class="bt-btn bt-btn--outline" href="{% url 'grow_profile_edit' profile.pk %}">Edit<span class="bt-visually-hidden"> {{ profile.name }}</span></a>
+          <a class="bt-btn" href="{% url 'grow_profile_delete' profile.pk %}"
+             hx-get="{% url 'grow_profile_delete' profile.pk %}" hx-target="#bt-dialog">Delete<span class="bt-visually-hidden"> {{ profile.name }}</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="bt-notice bt-notice--info bt-profilelist__note">{% include "growprofiles/_icon.html" with name="info" size=20 %}<span>Editing or deleting a profile never changes orders you have already placed.</span></p>
+  {% else %}
+    <section class="bt-empty-state">
+      <span class="bt-profile__icon">{% include "growprofiles/_icon.html" with name="home" size=40 %}</span>
+      <h3>You haven’t created a grow profile yet</h3>
+      <p>Tell us about your sunlight, soil and water once, and Basera will rank the native plants that suit your space.</p>
+      <a class="bt-btn" href="{% url 'grow_profile_new' %}">Create your first grow profile</a>
+    </section>
+  {% endif %}
+</div>

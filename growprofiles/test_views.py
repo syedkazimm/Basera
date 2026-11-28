@@ -1,6 +1,6 @@
-"""US-06: create a grow profile and see it listed. US-07: edit it."""
+"""US-06: create a grow profile and see it listed. US-07: edit and delete it."""
 
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from accounts.models import User
@@ -198,4 +198,93 @@ class EditGrowProfileTests(TestCase):
     def test_the_list_and_the_match_results_link_to_the_edit_page(self):
         for page in (reverse("grow_profiles"), reverse("match_profile", args=[self.profile.pk])):
             self.assertContains(self.client.get(page), f'href="{self.url}"')
+
+
+@FAST_HASHERS
+class DeleteGrowProfileTests(TestCase):
+    """US-07: delete a saved profile, after asking."""
+
+    htmx = {"HTTP_HX_REQUEST": "true"}
+
+    def setUp(self):
+        self.region = Region.objects.create(name="Punjab Plains")
+        self.ana = User.objects.create_user("ana@example.com", "x", full_name="Ana Khan")
+        self.bo = User.objects.create_user("bo@example.com", "x", full_name="Bo Ali")
+        self.profile = GrowProfile.objects.create(user=self.ana, region=self.region, **VALID)
+        self.url = reverse("grow_profile_delete", args=[self.profile.pk])
+        self.client.force_login(self.ana)
+
+    def test_the_list_shows_name_region_purpose_and_all_three_buttons(self):
+        page = self.client.get(reverse("grow_profiles"))
+        for text in ("Backyard", "Punjab Plains", "Shade &amp; cooling"):
+            self.assertContains(page, text)
+        for name in ("match_profile", "grow_profile_edit", "grow_profile_delete"):
+            self.assertContains(page, f'href="{reverse(name, args=[self.profile.pk])}"')
+        self.assertContains(page, "never changes orders you have already placed")
+
+    def test_asking_to_delete_shows_a_confirmation_page_and_deletes_nothing(self):
+        page = self.client.get(self.url)
+        self.assertContains(page, "Delete Backyard?")
+        self.assertContains(page, "Delete profile")
+        self.assertContains(page, "Keep it")
+        self.assertEqual(GrowProfile.objects.count(), 1)
+
+    def test_confirming_deletes_only_that_profile(self):
+        other = GrowProfile.objects.create(user=self.ana, region=self.region, **{**VALID, "name": "Roof"})
+        response = self.client.post(self.url, follow=True)
+        self.assertRedirects(response, reverse("grow_profiles"))
+        self.assertContains(response, "Deleted “Backyard”.")
+        self.assertQuerySetEqual(GrowProfile.objects.all(), [other])
+
+    def test_orders_that_used_the_profile_stay_with_the_link_cleared(self):
+        order = Order.objects.create(user=self.ana, grow_profile=self.profile, delivery_name="Ana",
+                                     delivery_address="1 Road", city="Lahore", phone="03001234567",
+                                     total_amount=500)
+        before = Order.objects.filter(pk=order.pk).values().get()
+        self.client.post(self.url)
+        self.assertEqual(Order.objects.filter(pk=order.pk).values().get(), {**before, "grow_profile_id": None})
+
+    def test_the_region_stays_when_its_last_profile_goes(self):
+        self.client.post(self.url)
+        self.assertTrue(Region.objects.filter(pk=self.region.pk).exists())
+
+    def test_with_htmx_the_question_is_a_dialog(self):
+        response = self.client.get(self.url, **self.htmx)
+        self.assertContains(response, "<dialog")
+        self.assertContains(response, "Delete Backyard?")
+        self.assertNotContains(response, "<html")
+        self.assertEqual(GrowProfile.objects.count(), 1)
+
+    def test_with_htmx_confirming_returns_the_new_list_and_a_notice(self):
+        response = self.client.post(self.url, **self.htmx)
+        self.assertContains(response, 'id="profiles-body"')
+        self.assertContains(response, "You haven’t created a grow profile yet")
+        self.assertContains(response, 'id="bt-dialog" hx-swap-oob="true"')
+        self.assertNotContains(response, "<html")
+        self.assertIn("basera:notice", response["HX-Trigger"])
+        self.assertEqual(GrowProfile.objects.count(), 0)
+
+    def test_another_customers_profile_answers_404_and_survives(self):
+        self.client.force_login(self.bo)
+        for headers in ({}, self.htmx):
+            self.assertEqual(self.client.get(self.url, **headers).status_code, 404)
+            self.assertEqual(self.client.post(self.url, **headers).status_code, 404)
+        self.assertEqual(GrowProfile.objects.count(), 1)
+
+    def test_logged_out_visitors_and_sellers_cannot_delete(self):
+        self.client.logout()
+        self.assertRedirects(self.client.post(self.url), f"/?next={self.url}")
+        response = self.client.post(self.url, **self.htmx)
+        self.assertEqual((response.status_code, response["HX-Redirect"]), (204, "/?next=/profiles/"))
+        seller = User.objects.create_user("s@example.com", "x", full_name="Sam", role=User.Role.SELLER)
+        self.client.force_login(seller)
+        self.assertRedirects(self.client.post(self.url), reverse("home"))
+        self.assertEqual(self.client.post(self.url, **self.htmx)["HX-Redirect"], reverse("home"))
+        self.assertEqual(GrowProfile.objects.count(), 1)
+
+    def test_deleting_needs_the_security_token(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.ana)
+        self.assertEqual(client.post(self.url).status_code, 403)
+        self.assertEqual(GrowProfile.objects.count(), 1)
 

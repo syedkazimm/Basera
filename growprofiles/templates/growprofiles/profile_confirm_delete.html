@@ -1,0 +1,20 @@
+{% extends "accounts/site_base.html" %}
+
+{% block title %}Delete grow profile{% endblock %}
+
+{% comment %}US-07: the delete question as a page, for when JavaScript is off. Needs: profile.{% endcomment %}
+
+{% block content %}
+<div class="bt-container">
+  <div class="bt-confirm bt-confirm--page">
+    {% include "growprofiles/_delete_question.html" %}
+    <div class="bt-confirm__actions">
+      <form method="post">
+        {% csrf_token %}
+        <button class="bt-btn bt-btn--danger" type="submit">Delete profile</button>
+      </form>
+      <a class="bt-btn bt-btn--outline" href="{% url 'grow_profiles' %}">Keep it</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
