@@ -1,0 +1,112 @@
+{% extends "accounts/site_base.html" %}
+
+{% block title %}Checkout{% endblock %}
+
+{% comment %}
+  US-21: delivery details for a Cash-on-Delivery order. The form is prefilled
+  from the user's profile; the panel on the right repeats the cart totals so
+  the buyer sees exactly what the order will cost before they place it.
+{% endcomment %}
+
+{% block content %}
+<div class="bt-container">
+  <div class="bt-split bt-cart">
+    <div class="bt-panel">
+      <p class="bt-eyebrow">Step 1 of 1</p>
+      <h1 class="bt-section-title">Delivery details</h1>
+      <p class="bt-muted">Pay cash when your plants arrive.</p>
+
+      {% if messages %}
+        {% for message in messages %}
+          <p class="bt-notice bt-notice--{{ message.tags|default:'info' }}" role="alert">{{ message }}</p>
+        {% endfor %}
+      {% endif %}
+
+      {% if has_unavailable %}
+        <p class="bt-notice bt-notice--error" role="alert">
+          Some plants in your cart are no longer available — go back to the cart and remove them before checking out.
+        </p>
+      {% endif %}
+
+      <form class="bt-form" method="post" action="{% url 'checkout' %}" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <p class="bt-notice bt-notice--error" role="alert">{{ form.non_field_errors.0 }}</p>
+        {% endif %}
+
+        <div class="bt-field">
+          <label class="bt-label" for="{{ form.delivery_name.id_for_label }}">{{ form.delivery_name.label }}</label>
+          <input class="bt-input{% if form.delivery_name.errors %} bt-input--invalid{% endif %}"
+                 type="text" id="{{ form.delivery_name.id_for_label }}" name="{{ form.delivery_name.html_name }}"
+                 value="{{ form.delivery_name.value|default_if_none:'' }}" maxlength="{{ form.delivery_name.max_length }}"
+                 autocomplete="name" required
+                 {% if form.delivery_name.errors %}aria-invalid="true" aria-describedby="delivery-name-error"{% endif %}>
+          {% if form.delivery_name.errors %}<p class="bt-error" id="delivery-name-error">{{ form.delivery_name.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="bt-field">
+          <label class="bt-label" for="{{ form.delivery_address.id_for_label }}">{{ form.delivery_address.label }}</label>
+          <input class="bt-input{% if form.delivery_address.errors %} bt-input--invalid{% endif %}"
+                 type="text" id="{{ form.delivery_address.id_for_label }}" name="{{ form.delivery_address.html_name }}"
+                 value="{{ form.delivery_address.value|default_if_none:'' }}" maxlength="{{ form.delivery_address.max_length }}"
+                 autocomplete="street-address" placeholder="House, street, area" required
+                 {% if form.delivery_address.errors %}aria-invalid="true" aria-describedby="delivery-address-error"{% endif %}>
+          {% if form.delivery_address.errors %}<p class="bt-error" id="delivery-address-error">{{ form.delivery_address.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="bt-field">
+          <label class="bt-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+          <input class="bt-input{% if form.city.errors %} bt-input--invalid{% endif %}"
+                 type="text" id="{{ form.city.id_for_label }}" name="{{ form.city.html_name }}"
+                 value="{{ form.city.value|default_if_none:'' }}" maxlength="{{ form.city.max_length }}"
+                 autocomplete="address-level2" placeholder="Lahore" required
+                 {% if form.city.errors %}aria-invalid="true" aria-describedby="city-error"{% endif %}>
+          {% if form.city.errors %}<p class="bt-error" id="city-error">{{ form.city.errors.0 }}</p>{% endif %}
+        </div>
+
+        <div class="bt-field">
+          <label class="bt-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          <input class="bt-input{% if form.phone.errors %} bt-input--invalid{% endif %}"
+                 type="tel" id="{{ form.phone.id_for_label }}" name="{{ form.phone.html_name }}"
+                 value="{{ form.phone.value|default_if_none:'' }}" maxlength="20"
+                 autocomplete="tel" inputmode="tel" placeholder="0300 1234567" required
+                 aria-describedby="phone-hint{% if form.phone.errors %} phone-error{% endif %}"
+                 {% if form.phone.errors %}aria-invalid="true"{% endif %}>
+          <p class="bt-hint" id="phone-hint">{{ form.phone.help_text }}</p>
+          {% if form.phone.errors %}<p class="bt-error" id="phone-error">{{ form.phone.errors.0 }}</p>{% endif %}
+        </div>
+
+        <p class="bt-cart__note">Payment method: <strong>Cash on Delivery</strong> — you pay the courier in cash when the plants arrive.</p>
+
+        <div class="bt-actions">
+          <button class="bt-btn" type="submit" {% if has_unavailable %}disabled aria-disabled="true"{% endif %}>Place order</button>
+          <a class="bt-btn bt-btn--ghost" href="{% url 'cart' %}">Back to cart</a>
+        </div>
+      </form>
+    </div>
+
+    <aside class="bt-panel bt-cart__summary" aria-label="Order summary">
+      <h2 class="bt-cart__summary-title">Your order</h2>
+      <ul class="bt-cart__list" role="list">
+        {% for line in lines %}
+          <li class="bt-cart-line">
+            <div class="bt-cart-line__body">
+              <p class="bt-cart-line__name">{{ line.species.common_name }} &times; {{ line.quantity }}</p>
+              {% if line.unavailable %}
+                <p class="bt-cart-line__warn">No longer available — remove it from the cart first.</p>
+              {% endif %}
+            </div>
+            <p class="bt-cart-line__total">Rs {{ line.line_total|floatformat:"0g" }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+      <dl class="bt-cart__totals">
+        <div><dt>Plants</dt><dd>{{ plant_count }}</dd></div>
+        <div><dt>Subtotal</dt><dd>Rs {{ subtotal|floatformat:"0g" }}</dd></div>
+        <div><dt>Delivery</dt><dd>Cash on delivery</dd></div>
+      </dl>
+    </aside>
+  </div>
+</div>
+{% endblock %}

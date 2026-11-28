@@ -1,0 +1,55 @@
+{% extends "accounts/site_base.html" %}
+
+{% block title %}Order #{{ order.pk }}{% endblock %}
+
+{% comment %}
+  US-21: the confirmation page for one order — what was bought, where it is
+  going, and the Cash-on-Delivery total the courier will collect. Only the
+  order's owner can reach it (orders.views.order_summary filters on the user).
+{% endcomment %}
+
+{% block content %}
+<div class="bt-container">
+  <div class="bt-panel">
+    <p class="bt-eyebrow">Order #{{ order.pk }}</p>
+    <h1 class="bt-section-title">Thank you, {{ order.delivery_name }}!</h1>
+    <p class="bt-muted">Placed {{ order.placed_at|date:"j F Y, g:i a" }} &middot;
+      Status: <strong>{{ order.get_status_display }}</strong> &middot;
+      Payment: <strong>{{ order.get_payment_method_display }}</strong></p>
+
+    <ul class="bt-cart__list" role="list">
+      {% for item in items %}
+        <li class="bt-cart-line">
+          <div class="bt-cart-line__body">
+            <p class="bt-cart-line__name">
+              <a href="{% url 'species_detail' item.species.pk %}">{{ item.species.common_name }}</a>
+            </p>
+            <p class="bt-card__sci">{{ item.species.scientific_name }}</p>
+            <p class="bt-cart-line__meta">{{ item.quantity }} &times; Rs {{ item.unit_price|floatformat:"0g" }} &middot; Sold by {{ item.species.seller.full_name }}</p>
+          </div>
+          <p class="bt-cart-line__total">Rs {{ item.total|floatformat:"0g" }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <div class="bt-split bt-split--even bt-summary-grid">
+      <div>
+        <h2 class="bt-section-title">Delivering to</h2>
+        <p>{{ order.delivery_name }}<br>
+           {{ order.delivery_address }}<br>
+           {{ order.city }}<br>
+           {{ order.phone }}</p>
+      </div>
+      <dl class="bt-cart__totals">
+        <div><dt>Plants</dt><dd>{{ plant_count }}</dd></div>
+        <div><dt>Total to pay on delivery</dt><dd>Rs {{ order.total_amount|floatformat:"0g" }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="bt-actions">
+      <a class="bt-btn" href="{% url 'catalogue' %}">Keep browsing plants</a>
+      <a class="bt-btn bt-btn--ghost" href="{% url 'cart' %}">Your cart</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

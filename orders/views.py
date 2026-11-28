@@ -1,4 +1,5 @@
-"""The cart (US-19): add a plant, change how many, take it out again.
+"""The cart (US-19) and checkout (US-21): add a plant, change how many, take
+it out again, then turn the cart into a real Cash-on-Delivery order.
 
 One CartItem row per species — the model enforces UNIQUE(user, species) — so
 adding a plant that is already in the cart raises its quantity instead of
@@ -18,7 +19,9 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F, Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -26,9 +29,11 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.ui import page_band
+from catalog.models import PlantSpecies
 from catalog.queries import visible_species
 
-from .models import CartItem
+from .forms import CheckoutForm
+from .models import CartItem, Order, OrderItem
 
 
 def _is_htmx(request):
@@ -121,7 +126,12 @@ def _finish(request, back, *, fragment="orders/_cart_response.html"):
 
     if fragment == "orders/_cart_response.html":
         lines, subtotal, plant_count = _cart_lines(request.user)
-        context = {"lines": lines, "subtotal": subtotal, "plant_count": plant_count}
+        context = {
+            "lines": lines,
+            "subtotal": subtotal,
+            "plant_count": plant_count,
+            "any_unavailable": any(line["unavailable"] for line in lines),
+        }
     else:
         context = {}
     response = render(request, fragment, context)
@@ -150,6 +160,7 @@ def cart_view(request):
         "lines": lines,
         "subtotal": subtotal,
         "plant_count": plant_count,
+        "any_unavailable": any(line["unavailable"] for line in lines),
         **page_band(
             request,
             "Your cart",
@@ -159,6 +170,131 @@ def cart_view(request):
         ),
     }
     return render(request, "orders/cart.html", context)
+
+
+@requires_customer
+def checkout(request):
+    """US-21: turn the cart into a Cash-on-Delivery order.
+
+    GET shows the delivery form prefilled from the user's profile. POST checks
+    every line again (stock can have moved since the cart was last open) and
+    creates the order in one transaction: item prices are snapshotted, the
+    listings' stock is decremented with F() expressions so two buyers racing
+    for the last plant cannot both win, and the cart is emptied.
+    """
+    lines, subtotal, plant_count = _cart_lines(request.user)
+
+    sellable = [line for line in lines if not line["unavailable"]]
+    if not sellable:
+        # An empty cart — or one whose every line has sold out or been
+        # withdrawn — has nothing to check out.
+        _notify(request, "error", "Your cart has nothing available to check out.")
+        return _finish(request, reverse("cart"))
+
+    initial = {
+        "delivery_name": request.user.full_name,
+        "phone": request.user.phone,
+    }
+    form = CheckoutForm(initial=initial)
+
+    if request.method == "POST":
+        form = CheckoutForm(request.POST)
+        if form.is_valid():
+            try:
+                order = _place_order(request.user, form, sellable)
+            except ValidationError as error:
+                # Something sold out between loading the page and placing the
+                # order; send the buyer back to the cart to see the new state.
+                _notify(request, "error", "; ".join(error.messages))
+                return _finish(request, reverse("cart"))
+            return redirect("order_summary", pk=order.pk)
+
+    context = {
+        "form": form,
+        "lines": lines,
+        "subtotal": subtotal,
+        "plant_count": plant_count,
+        "has_unavailable": len(sellable) < len(lines),
+        **page_band(
+            request,
+            "Checkout",
+            "Where should your plants go?",
+            ("Catalogue", reverse("catalogue")),
+            ("Cart", reverse("cart")),
+            ("Checkout", None),
+        ),
+    }
+    return render(request, "orders/checkout.html", context)
+
+
+def _place_order(user, form, lines):
+    """Create the Order and its items atomically, or raise ValidationError.
+
+    `lines` are the cart lines that looked sellable when the page was built;
+    they are re-validated here against the database because the cart page may
+    have been open while a seller changed a listing.
+    """
+    with transaction.atomic():
+        # Lock the listing rows so a stock check and its decrement cannot race
+        # another buyer's checkout.
+        for line in lines:
+            species = PlantSpecies.objects.select_for_update().get(pk=line["species"].pk)
+            if species.stock_qty < line["quantity"] or species.is_invasive or not species.is_active:
+                raise ValidationError(
+                    f"{line['species'].common_name} is no longer available in that quantity."
+                )
+
+        order = Order.objects.create(
+            user=user,
+            grow_profile=None,
+            status=Order.Status.PENDING,
+            delivery_name=form.cleaned_data["delivery_name"],
+            delivery_address=form.cleaned_data["delivery_address"],
+            city=form.cleaned_data["city"],
+            phone=form.cleaned_data["phone"],
+            payment_method=Order.PaymentMethod.COD,
+            total_amount=sum(line["line_total"] for line in lines),
+        )
+        for line in lines:
+            OrderItem.objects.create(
+                order=order,
+                species=line["species"],
+                quantity=line["quantity"],
+                unit_price=line["species"].price,
+            )
+            # F() so the decrement happens in the database, not on a stale
+            # Python copy of stock_qty.
+            PlantSpecies.objects.filter(pk=line["species"].pk).update(
+                stock_qty=F("stock_qty") - line["quantity"]
+            )
+
+        CartItem.objects.filter(user=user).delete()
+        return order
+
+
+@requires_customer
+def order_summary(request, pk):
+    """US-21: the confirmation page for one order — owner eyes only."""
+    order = get_object_or_404(
+        Order.objects.filter(user=request.user).prefetch_related(
+            Prefetch("items", queryset=OrderItem.objects.select_related("species", "species__seller"))
+        ),
+        pk=pk,
+    )
+    context = {
+        "order": order,
+        "items": order.items.all(),
+        "plant_count": sum(item.quantity for item in order.items.all()),
+        **page_band(
+            request,
+            f"Order #{order.pk}",
+            "Thank you — your plants are on their way.",
+            ("Catalogue", reverse("catalogue")),
+            ("Cart", reverse("cart")),
+            (f"Order #{order.pk}", None),
+        ),
+    }
+    return render(request, "orders/order_summary.html", context)
 
 
 @requires_customer

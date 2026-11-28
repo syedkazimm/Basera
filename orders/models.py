@@ -102,5 +102,10 @@ class OrderItem(models.Model):
             models.CheckConstraint(condition=models.Q(unit_price__gte=0), name="orders_orderitem_unit_price_gte_0"),
         ]
 
+    @property
+    def total(self):
+        """What this line cost when the order was placed (US-21 summary page)."""
+        return self.unit_price * self.quantity
+
     def __str__(self):
         return f"{self.quantity} x {self.species.common_name} (order #{self.order_id})"

@@ -243,6 +243,17 @@ h1, h2, h3 {
 }
 .bt-input--pill { border-radius: 99px; width: min(100%, 480px); padding: 0 20px; }
 .bt-input:focus { outline: 0; border-color: var(--bt-forest); box-shadow: 0 0 0 3px rgba(122, 155, 110, 0.35); }
+.bt-input--invalid { border-color: var(--bt-coral); }
+
+/* US-21: checkout form fields. */
+.bt-form { display: grid; gap: 18px; margin-top: 20px; }
+.bt-label { display: block; margin-bottom: 6px; font-weight: 700; color: var(--bt-forest); }
+.bt-field .bt-input { width: 100%; }
+.bt-field .bt-hint { margin: 6px 0 0; font-size: 14px; }
+.bt-error { margin: 6px 0 0; color: var(--bt-coral); font-weight: 700; }
+.bt-summary-grid { margin-top: 28px; align-items: start; }
+.bt-input--invalid { border-color: var(--bt-coral); }
+
 
 .bt-count { margin: 0 0 20px; font-size: 18px; color: var(--bt-forest); }
 

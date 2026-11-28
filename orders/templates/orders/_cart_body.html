@@ -72,8 +72,12 @@
         <div><dt>Subtotal</dt><dd>Rs {{ subtotal|floatformat:"0g" }}</dd></div>
         <div><dt>Delivery</dt><dd>Cash on delivery</dd></div>
       </dl>
-      <p class="bt-cart__note">Checkout is the next story. These totals are what you'll pay once it lands.</p>
-      <span class="bt-btn bt-btn--disabled" aria-disabled="true">Checkout coming soon</span>
+      <p class="bt-cart__note">Cash on delivery — pay the courier when your plants arrive.</p>
+      {% if any_unavailable %}
+        <span class="bt-btn bt-btn--disabled" aria-disabled="true">Remove unavailable plants to check out</span>
+      {% else %}
+        <a class="bt-btn" href="{% url 'checkout' %}">Checkout</a>
+      {% endif %}
     </aside>
   </div>
 {% else %}
