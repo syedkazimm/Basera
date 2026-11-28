@@ -68,7 +68,7 @@ def run_django(*args, **env):
     full = {**os.environ, "DATABASE_URL": "postgres://u:p@localhost:5432/unused"}
     for name in ("DEBUG", "SECRET_KEY", "ALLOWED_HOSTS", "RENDER", "RENDER_EXTERNAL_HOSTNAME", "EMAIL_ADDRESS",
                  "EMAIL_APP_PASSWORD", "SECURE_SSL_REDIRECT", "SERVE_MEDIA"):
-        full.pop(name, None)
+        full[name] = ""
     full.update(env)
     return subprocess.run([sys.executable, "manage.py", *args], cwd=ROOT, env=full, capture_output=True, text=True)
 
