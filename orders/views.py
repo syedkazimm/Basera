@@ -201,7 +201,7 @@ def checkout(request):
         form = CheckoutForm(request.POST)
         if form.is_valid():
             try:
-                order = _place_order(request.user, form, sellable)
+                order = _place_order(request.user, form)
             except ValidationError as error:
                 # Something sold out between loading the page and placing the
                 # order; send the buyer back to the cart to see the new state.
@@ -227,22 +227,42 @@ def checkout(request):
     return render(request, "orders/checkout.html", context)
 
 
-def _place_order(user, form, lines):
-    """Create the Order and its items atomically, or raise ValidationError.
+def _place_order(user, form):
+    """Create the Order and its items in one transaction, or raise ValidationError.
 
-    `lines` are the cart lines that looked sellable when the page was built;
-    they are re-validated here against the database because the cart page may
-    have been open while a seller changed a listing.
+    The cart and every listing in it are read again here under row locks, so
+    stock, availability and prices all come from the database at this moment,
+    not from the page the buyer was looking at. Rows are locked in primary-key
+    order so two checkouts that share plants cannot deadlock. If any line can
+    no longer be sold, nothing is created and the cart is left as it was.
     """
     with transaction.atomic():
-        # Lock the listing rows so a stock check and its decrement cannot race
-        # another buyer's checkout.
-        for line in lines:
-            species = PlantSpecies.objects.select_for_update().get(pk=line["species"].pk)
-            if species.stock_qty < line["quantity"] or species.is_invasive or not species.is_active:
-                raise ValidationError(
-                    f"{line['species'].common_name} is no longer available in that quantity."
+        cart = list(CartItem.objects.select_for_update().filter(user=user).order_by("species_id"))
+        if not cart:
+            raise ValidationError("Your cart is empty.")
+
+        listings = {
+            species.pk: species
+            for species in PlantSpecies.objects.select_for_update()
+            .filter(pk__in=[item.species_id for item in cart])
+            .order_by("pk")
+        }
+
+        problems = []
+        for item in cart:
+            species = listings.get(item.species_id)
+            if species is None or species.is_invasive or not species.is_active:
+                name = species.common_name if species else "A plant"
+                problems.append(f"{name} is no longer available. Review your cart.")
+            elif species.stock_qty < item.quantity:
+                problems.append(
+                    f"Only {species.stock_qty} of the {species.common_name} are left in stock."
                 )
+        if problems:
+            raise ValidationError(problems)
+
+        lines = [(listings[item.species_id], item.quantity) for item in cart]
+        total = sum((species.price * quantity for species, quantity in lines), Decimal("0.00"))
 
         order = Order.objects.create(
             user=user,
@@ -253,22 +273,20 @@ def _place_order(user, form, lines):
             city=form.cleaned_data["city"],
             phone=form.cleaned_data["phone"],
             payment_method=Order.PaymentMethod.COD,
-            total_amount=sum(line["line_total"] for line in lines),
+            total_amount=total,
         )
-        for line in lines:
+        for species, quantity in lines:
             OrderItem.objects.create(
                 order=order,
-                species=line["species"],
-                quantity=line["quantity"],
-                unit_price=line["species"].price,
+                species=species,
+                quantity=quantity,
+                unit_price=species.price,
             )
             # F() so the decrement happens in the database, not on a stale
             # Python copy of stock_qty.
-            PlantSpecies.objects.filter(pk=line["species"].pk).update(
-                stock_qty=F("stock_qty") - line["quantity"]
-            )
+            PlantSpecies.objects.filter(pk=species.pk).update(stock_qty=F("stock_qty") - quantity)
 
-        CartItem.objects.filter(user=user).delete()
+        CartItem.objects.filter(pk__in=[item.pk for item in cart]).delete()
         return order
 
 

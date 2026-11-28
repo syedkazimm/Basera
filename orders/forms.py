@@ -17,7 +17,7 @@ from .models import Order
 # with a leading +92 instead of the 0, and with the digits grouped by a
 # space or a dash ("0300 1234567", "+92-321-1234567"). Landlines (02x, 04x…)
 # and foreign numbers are rejected: delivery is by courier to a mobile.
-PAKISTANI_MOBILE = re.compile(r"^(?:\+92|0)3\d{2}[- ]?\d{7}$")
+PAKISTANI_MOBILE = re.compile(r"^(?:\+92|0)3[0-9]{2}[- ]?[0-9]{7}$")
 
 
 def normalise_mobile(value):

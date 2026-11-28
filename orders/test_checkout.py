@@ -78,6 +78,15 @@ class CheckoutFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("delivery_name", form.errors)
 
+    def test_non_ascii_digits_are_rejected(self):
+        from .forms import CheckoutForm
+        form = CheckoutForm(data={
+            "delivery_name": "Ana Khan", "delivery_address": "12-A Canal Road",
+            "city": "Lahore", "phone": "٠٣٠٠١٢٣٤٥٦٧",
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn("phone", form.errors)
+
 
 @FAST_HASHERS
 class CheckoutViewTests(TestCase):
@@ -179,7 +188,7 @@ class CheckoutViewTests(TestCase):
         response = self.client.post(reverse("checkout"), self.data, follow=True)
         self.assertRedirects(response, reverse("cart"))
         self.assertFalse(Order.objects.exists())
-        self.assertTrue(any("no longer available" in m.message for m in get_messages(response.wsgi_request)))
+        self.assertTrue(any("left in stock" in m.message for m in get_messages(response.wsgi_request)))
 
     def test_invalid_post_keeps_the_cart_and_the_form(self):
         response = self.client.post(reverse("checkout"), {**self.data, "phone": "042 3577 0000"})
@@ -187,6 +196,31 @@ class CheckoutViewTests(TestCase):
         self.assertContains(response, "Enter a Pakistani mobile number")
         self.assertEqual(CartItem.objects.filter(user=self.customer).count(), 2)
         self.assertFalse(Order.objects.exists())
+
+    def test_unavailable_line_at_place_time_blocks_the_whole_order(self):
+        self.species2.is_active = False
+        self.species2.save(update_fields=["is_active"])
+        response = self.client.post(reverse("checkout"), self.data, follow=True)
+        self.assertRedirects(response, reverse("cart"))
+        self.assertFalse(Order.objects.exists())
+        self.assertEqual(CartItem.objects.filter(user=self.customer).count(), 2)
+        self.neem.refresh_from_db()
+        self.assertEqual(self.neem.stock_qty, 10)
+
+    def test_price_is_read_when_the_order_is_placed_not_when_the_page_loaded(self):
+        self.client.get(reverse("checkout"))
+        self.neem.price = Decimal("500.00")
+        self.neem.save(update_fields=["price"])
+        self.client.post(reverse("checkout"), self.data)
+        order = Order.objects.get()
+        self.assertEqual(order.items.get(species=self.neem).unit_price, Decimal("500.00"))
+        self.assertEqual(order.total_amount, Decimal("1200.00"))
+
+    def test_another_customers_cart_is_left_alone(self):
+        other = User.objects.create_user("bilal@example.com", "x", full_name="Bilal Ahmed")
+        CartItem.objects.create(user=other, species=self.neem, quantity=1)
+        self.client.post(reverse("checkout"), self.data)
+        self.assertTrue(CartItem.objects.filter(user=other).exists())
 
     def test_post_only(self):
         response = self.client.post(reverse("order_summary", args=[1]))
